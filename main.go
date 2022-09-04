@@ -7,11 +7,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/xlzd/gotp"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
 	"videosrt/videosrt"
+	//	"strconv"
 )
 
 type Result struct {
@@ -23,6 +25,7 @@ type Result struct {
 //定义配置文件
 const CONFIG = "config.ini"
 const VIDEO_DIR = "./video/"
+const SECRET = "4S62BZNFXXSZLCRO"
 
 func process(video string) {
 
@@ -71,6 +74,15 @@ func process(video string) {
 }
 
 func do(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	// otp, _ := strconv.ParseInt(r.PostForm.Get("otp"), 10, 64)
+	var otp = r.FormValue("otp")
+	totp := gotp.NewDefaultTOTP(SECRET)
+	if !totp.Verify(otp, time.Now().Unix()) {
+		fmt.Printf("invalid otp %s\n", otp)
+		json.NewEncoder(w).Encode(Result{false, []byte{}, ""})
+		return
+	}
 	file, handler, err := r.FormFile("file")
 	if err == nil {
 		data, err := ioutil.ReadAll(file)
@@ -80,16 +92,14 @@ func do(w http.ResponseWriter, r *http.Request) {
 			hash := sha256.New()
 			hash.Write(bytes)
 			sum := hash.Sum(nil)
-			fmt.Printf("%x", sum)
+			fmt.Printf("%x\n", sum)
 			var filename = hex.EncodeToString(sum)
 			var filePath string = VIDEO_DIR + filename + path.Ext(handler.Filename)
 			ioutil.WriteFile(filePath, bytes, 0666)
 			process(filePath)
 			srtFile, _ := os.Open(VIDEO_DIR + filename + ".srt")
 			srtBytes, _ := ioutil.ReadAll(srtFile)
-			result := Result{true, srtBytes, ""}
-			w.Header().Set("Content-Type", "application/json;charset=utf-8")
-			json.NewEncoder(w).Encode(result)
+			json.NewEncoder(w).Encode(Result{true, srtBytes, ""})
 		}
 	}
 
