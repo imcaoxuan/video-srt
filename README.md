@@ -45,12 +45,11 @@ accessKeySecret=your.AccessKeySecret
 * 生成字幕文件（CLI）
 
 ```shell
-go run main.go video.mp4
+go run main.go
 ```
-
-* 生成字幕文件（可执行文件 | [video-srt.exe](https://github.com/wxbool/video-srt/blob/master/video-srt.exe)）
-```shell
-video-srt video.mp4
+```curl
+curl --location --request POST 'http://{your.host}:8090/do' \
+--form 'file=@"video.mp4"'
 ```
 
 
@@ -64,4 +63,3 @@ video-srt video.mp4
     * 开通 `OSS对象存储` 服务，并创建一个存储空间（Bucket）（读写权限设置为公共读）
     * 开通 `智能语音交互` 服务，并创建项目（根据使用场景选择识别语言以及偏好等）
     * 设置 `config.ini` 文件的配置项
-    * 命令行执行（详见`使用`）
