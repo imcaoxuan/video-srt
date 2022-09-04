@@ -49,8 +49,10 @@ go run main.go
 ```
 ```curl
 curl --location --request POST 'http://{your.host}:8090/do' \
---form 'file=@"video.mp4"'
+--form 'file=@"video.mp4"' \
+--form 'otp="{your.otp}"'
 ```
+
 
 
 ## FAQ

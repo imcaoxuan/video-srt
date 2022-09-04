@@ -25,6 +25,8 @@ type Result struct {
 //定义配置文件
 const CONFIG = "config.ini"
 const VIDEO_DIR = "./video/"
+
+// REPLACE WITH YOUR SECRET
 const SECRET = "4S62BZNFXXSZLCRO"
 
 func process(video string) {
