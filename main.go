@@ -1,18 +1,30 @@
 package main
 
+import "net/http"
+import "io/ioutil"
 import (
-	"flag"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 	"videosrt/videosrt"
 )
 
+type Result struct {
+	Successful bool
+	SubTitle   []byte
+	Audio      string
+}
+
 //定义配置文件
 const CONFIG = "config.ini"
+const VIDEO_DIR = "./video/"
 
-func main() {
+func process(video string) {
 
 	//致命错误捕获
 	defer func() {
@@ -29,19 +41,19 @@ func main() {
 
 	//初始化
 	if len(os.Args) < 2 {
-		os.Args = append(os.Args , "")
+		os.Args = append(os.Args, "")
 	}
 
-	var video string
+	//var video string
 
 	//设置命令行参数
-	flag.StringVar(&video, "f", "", "enter a video file waiting to be processed .")
+	//flag.StringVar(&video, "f", "", "enter a video file waiting to be processed .")
 
-	flag.Parse()
+	//flag.Parse()
 
-	if video == "" && os.Args[1] != "" && os.Args[1] != "-f" {
-		video = os.Args[1]
-	}
+	//if video == "" && os.Args[1] != "" && os.Args[1] != "-f" {
+	//	video = os.Args[1]
+	//}
 
 	//获取应用
 	app := videosrt.NewApp(CONFIG)
@@ -56,4 +68,35 @@ func main() {
 
 	//延迟退出
 	time.Sleep(time.Second * 1)
+}
+
+func do(w http.ResponseWriter, r *http.Request) {
+	file, handler, err := r.FormFile("file")
+	if err == nil {
+		data, err := ioutil.ReadAll(file)
+		if err == nil {
+			bytes := []byte(data)
+			fmt.Println(handler.Filename)
+			hash := sha256.New()
+			hash.Write(bytes)
+			sum := hash.Sum(nil)
+			fmt.Printf("%x", sum)
+			var filename = hex.EncodeToString(sum)
+			var filePath string = VIDEO_DIR + filename + path.Ext(handler.Filename)
+			ioutil.WriteFile(filePath, bytes, 0666)
+			process(filePath)
+			srtFile, _ := os.Open(VIDEO_DIR + filename + ".srt")
+			srtBytes, _ := ioutil.ReadAll(srtFile)
+			result := Result{true, srtBytes, ""}
+			w.Header().Set("Content-Type", "application/json;charset=utf-8")
+			json.NewEncoder(w).Encode(result)
+		}
+	}
+
+}
+func main() {
+	const address string = ":8090"
+	http.HandleFunc("/do", do)
+	fmt.Printf("running on %s\n", address)
+	http.ListenAndServe(address, nil)
 }
